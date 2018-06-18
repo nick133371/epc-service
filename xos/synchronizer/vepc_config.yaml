@@ -218,6 +218,7 @@ blueprints:
           - vmme_network
         links:
           - name: VHSSTenant
+          - name: VSPGWCTenant
       - name: VHSSTenant
         networks:
           - management
@@ -227,7 +228,6 @@ blueprints:
           - management
           - vspgwc_network
         links:
-          - name: VMMETenant
           - name: VSPGWUTenant
       - name: VSPGWUTenant
         network:
