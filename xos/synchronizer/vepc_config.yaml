@@ -230,7 +230,7 @@ blueprints:
         links:
           - name: VSPGWUTenant
       - name: VSPGWUTenant
-        network:
+        networks:
           - management
           - vspgwu_network
 
