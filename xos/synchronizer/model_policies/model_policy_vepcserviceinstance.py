@@ -160,7 +160,7 @@ class VEPCServiceInstancePolicy(Policy):
         # Use cross product to create ServiceInstance Link
         for source_tenant in source_tenants:
             for target_tenant in target_tenants:
-                link = ServiceInstanceLink.object.filter(
+                link = ServiceInstanceLink.objects.filter(
                     subscriber_service_instance_id=source_tenant.id,
                     provider_service_instance_id=target_tenant.id
                 )
