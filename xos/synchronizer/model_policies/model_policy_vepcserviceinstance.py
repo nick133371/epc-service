@@ -71,12 +71,12 @@ class VEPCServiceInstancePolicy(Policy):
 
         return vendor_obj
 
-    def create_service_instance(self, service_obj):
+    def create_service_instance(self, service_obj, node_label=None):
         tenant_class = self.get_tenant_class(service_obj.leaf_model_name)
         vendor_obj = self.get_vendor_object(service_obj.leaf_model_name)
 
-        vendor_attribute = "%s_vendor" % service_obj.name.lower()
-        name = "epc-%s-%d" % (tenant_class.__name__, self.obj.id)
+        vendor_name = "%s_vendor" % service_obj.name.lower()
+        name = "epc-%s-%d" % (tenant_class.__name__.lower(), self.obj.id)
 
         instance = tenant_class.objects.filter(owner=service_obj.id, name=name).first()
 
@@ -85,7 +85,21 @@ class VEPCServiceInstancePolicy(Policy):
 
         instance = tenant_class(owner=service_obj, name=name)
         instance.master_serviceinstance = self.obj
-        instance.__setattr__(vendor_attribute, vendor_obj)
+        instance.__setattr__(vendor_name, vendor_obj)
+
+        if node_label:
+            instance.node_label = "%s-%d" % (node_label, self.obj.id)
+
+        # Assign custom parameter to child tenant
+        if name in ["vspgwc", "vspgwu"]:
+            instance.enodeb_ip_addr = self.obj.enodeb_ip_addr_s1u
+            instance.enodeb_mac_addr = self.obj.enodeb_mac_addr_s1u
+            instance.appserver_ip_addr = self.obj.appserver_ip_addr
+            instance.appserver_mac_addr = self.obj.appserver_mac_addr
+        elif name in ["vmme"]:
+            instance.enodeb_ip_addr = self.obj.enodeb_ip_addr_s1mme
+
+        instance.invalidate_cache(vendor_name)
         instance.save()
 
         log.info("Instance %s was created." % instance)
@@ -141,26 +155,25 @@ class VEPCServiceInstancePolicy(Policy):
             subscriber_service_id=source.id, provider_service_id=target.id
         ).first()
 
-        # If dependency is existed in Model, then early return
-        if dependency:
-            return dependency
+        if not dependency:
+            # If no dependency existed, then create dependency
+            dependency = ServiceDependency(
+                subscriber_service=source, provider_service=target
+            )
+            dependency.save()
 
-        # If no dependency existed, then create dependency
-        dependency = ServiceDependency(
-            subscriber_service=source, provider_service=target
-        )
-        dependency.save()
-
-        log.info("Service dependency %s was created" % dependency)
+            log.info("Service dependency %s was created, %s->%s" % (dependency, source, target))
 
         # Get subscriber and provider's Service Instance
-        source_tenants = source.service_instances.all()
-        target_tenants = source.service_instances.all()
+        source_tenant_class = self.get_tenant_class(source.leaf_model_name)
+        target_tenant_class = self.get_tenant_class(target.leaf_model_name)
+        source_tenants = source_tenant_class.objects.all()
+        target_tenants = target_tenant_class.objects.all()
 
         # Use cross product to create ServiceInstance Link
         for source_tenant in source_tenants:
             for target_tenant in target_tenants:
-                link = ServiceInstanceLink.object.filter(
+                link = ServiceInstanceLink.objects.filter(
                     subscriber_service_instance_id=source_tenant.id,
                     provider_service_instance_id=target_tenant.id
                 )
@@ -203,6 +216,7 @@ class VEPCServiceInstancePolicy(Policy):
             tenant_str = node.get("name", "")
             networks = node.get("networks", list())
             links = node.get("links", list())
+            node_label = node.get("node_label", None)
 
             # Get Service Class by Defined Service Instance Name
             # service_obj: Service Object in XOS core
@@ -213,13 +227,15 @@ class VEPCServiceInstancePolicy(Policy):
                 network_obj = Network.objects.filter(name=network).first()
                 self.assign_network_to_service(service_obj, network_obj)
 
-            self.create_service_instance(service_obj)
+            self.create_service_instance(service_obj, node_label=node_label)
 
             # Collect Service Dependencies relationship from links
             for provider in links:
                 provider_str = provider.get("name", "")
                 provider_service_obj = self.get_service_object(provider_str)
                 dependencies.append((service_obj, provider_service_obj))
+
+        log.info("Dependency Pair: %s" % dependencies)
 
         # Create Service Dependency between subscriber and provider
         for subscriber, provider in dependencies:
