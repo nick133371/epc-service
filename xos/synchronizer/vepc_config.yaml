@@ -233,6 +233,7 @@ blueprints:
         networks:
           - management
           - vspgwu_network
+          - public_network
 
 dependency_graph: "/opt/xos/synchronizers/epc-service/model-deps"
 #steps_dir: "/opt/xos/synchronizers/epc-service/steps"
