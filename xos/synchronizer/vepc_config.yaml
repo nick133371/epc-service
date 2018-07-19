@@ -209,7 +209,7 @@ blueprints:
       - name: vspgwu_network
         subnet: 10.0.9.0/24
         permit_all_slices: True
-        template: flat_template
+        template: private_template
         owner: vspgwu
     graph:
       - name: VMMETenant
@@ -234,6 +234,7 @@ blueprints:
           - management
           - vspgwu_network
           - public_network
+
 
 dependency_graph: "/opt/xos/synchronizers/epc-service/model-deps"
 #steps_dir: "/opt/xos/synchronizers/epc-service/steps"
