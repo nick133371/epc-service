@@ -191,6 +191,11 @@ blueprints:
           - db_network
   - name: mcord-oai
     networks:
+      - name: oaibbu_network
+        subnet: 10.0.4.0/24
+        permit_all_slices: True
+        template: flat_template
+        owner: oaibbu
       - name: vmme_network
         subnet: 10.0.6.0/24
         permit_all_slices: True
@@ -212,6 +217,14 @@ blueprints:
         template: private_template
         owner: vspgwu
     graph:
+     - name: OAIBBUTenant
+        networks:
+          - management
+          - oaibbu_network
+          - public_network
+        links:
+          - name: VMMETenant
+          - name: VSPGWUTenant
       - name: VMMETenant
         networks:
           - management
