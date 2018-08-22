@@ -217,7 +217,7 @@ blueprints:
         template: private_template
         owner: vspgwu
     graph:
-     - name: OAIBBUTenant
+      - name: OAIBBUTenant
         networks:
           - management
           - oaibbu_network
