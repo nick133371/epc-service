@@ -194,7 +194,7 @@ blueprints:
       - name: oaibbu_network
         subnet: 10.0.4.0/24
         permit_all_slices: True
-        template: flat_template
+        template: private_template
         owner: oaibbu
       - name: vmme_network
         subnet: 10.0.6.0/24
