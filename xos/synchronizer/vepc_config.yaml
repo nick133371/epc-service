@@ -199,7 +199,7 @@ blueprints:
       - name: vmme_network
         subnet: 10.0.6.0/24
         permit_all_slices: True
-        template: flat_template
+        template: private_template
         owner: vmme
       - name: vhss_network
         subnet: 10.0.7.0/24
